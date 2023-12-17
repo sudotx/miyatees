@@ -13,36 +13,33 @@ contract MiyaTees is Ownable {
                                 ERRORS
     //////////////////////////////////////////////////////////////*/
     error InsufficientFundsSent();
-    error UnableToRefund();
     error WithdrawFailed();
     error AuctionNotOver();
-    error AuctionProfitsAlreadyWithdrawn();
-    error RefundFailed();
-    error NotEligibleForRefund();
-    error RefundAlreadyClaimed();
     error AuctionEnded();
     error AuctionNotStartedYet();
     error AuctionAlreadyStarted();
     error ZeroAddress();
 
+    /*//////////////////////////////////////////////////////////////
+                                EVENTS
+    //////////////////////////////////////////////////////////////*/
     event RefundPaid();
     event BidPlaced(address indexed sender, uint256 amount);
     event AuctionStarted();
-    event Bid(address indexed sender, uint256 amount);
     event Withdraw(address indexed bidder, uint256 amount);
     event End(address winner, uint256 amount);
 
     /*//////////////////////////////////////////////////////////////
                             PRICING PARAMS
     //////////////////////////////////////////////////////////////*/
-    IERC721 public nft;
     uint256 public nftId;
-    address payable public seller;
     uint256 public endAt;
+    uint256 public highestBid;
     bool public started;
     bool public ended;
+    IERC721 public nft;
     address public highestBidder;
-    uint256 public highestBid;
+    address payable public seller;
     mapping(address => uint256) public pendingReturns;
 
     constructor(address payable _beneficiary, address _nft, uint256 _nftId) {
@@ -102,12 +99,16 @@ contract MiyaTees is Ownable {
     function withdrawPendingReturns() external {
         uint256 bal = pendingReturns[msg.sender];
         if (bal > 0) {
-            pendingReturns[msg.sender] = 0;
             payable(msg.sender).transfer(bal);
+            pendingReturns[msg.sender] = 0;
+            emit RefundPaid();
         }
         emit Withdraw(msg.sender, bal);
     }
 
+    /**
+     * @dev End the auction
+     */
     function endAuction() external onlyOwner {
         if (!started) {
             revert AuctionNotStartedYet();
