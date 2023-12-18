@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.16;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
+import {ReentrancyGuard} from "@solmate/utils/ReentrancyGuard.sol";
 
 interface IERC721 {
     function safeTransferFrom(address from, address to, uint256 tokenId) external;
     function transferFrom(address, address, uint256) external;
 }
 
-contract MiyaTees is Ownable {
+contract MiyaTees is ReentrancyGuard {
     /*//////////////////////////////////////////////////////////////
                                 ERRORS
     //////////////////////////////////////////////////////////////*/
-    error InsufficientFundsSent();
+    error InsufficientETHSent();
     error WithdrawFailed();
     error AuctionNotOver();
     error AuctionEnded();
@@ -25,22 +26,25 @@ contract MiyaTees is Ownable {
     //////////////////////////////////////////////////////////////*/
     event RefundPaid();
     event BidPlaced(address indexed sender, uint256 amount);
-    event AuctionStarted();
+    event AuctionStarted(uint256 endTime);
     event Withdraw(address indexed bidder, uint256 amount);
     event End(address winner, uint256 amount);
 
     /*//////////////////////////////////////////////////////////////
                             PRICING PARAMS
     //////////////////////////////////////////////////////////////*/
-    uint256 public nftId;
     uint256 public endAt;
-    uint256 public highestBid;
     bool public started;
     bool public ended;
-    IERC721 public nft;
     address public highestBidder;
-    address payable public seller;
+    uint256 public highestBid;
+    uint256 public immutable nftId;
+    address payable public immutable seller;
+    IERC721 public immutable nft;
     mapping(address => uint256) public pendingReturns;
+
+    uint256 public constant AUCTION_DURATION = 3 days;
+    uint256 public constant BID_INCREMENT = 0.05 ether;
 
     constructor(address payable _beneficiary, address _nft, uint256 _nftId) {
         if (_beneficiary == address(0)) {
@@ -54,17 +58,17 @@ contract MiyaTees is Ownable {
         seller = payable(_beneficiary);
     }
 
-    function startAuction() external onlyOwner {
-        if (!started) {
+    function startAuction() external {
+        if (started) {
             revert AuctionAlreadyStarted();
         }
 
         started = true;
-        endAt = block.timestamp + 3 days;
+        endAt = block.timestamp + AUCTION_DURATION;
 
         nft.transferFrom(msg.sender, address(this), nftId);
 
-        emit AuctionStarted();
+        emit AuctionStarted(endAt);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -74,13 +78,16 @@ contract MiyaTees is Ownable {
         if (!started) {
             revert AuctionNotStartedYet();
         }
+        if (ended) {
+            revert AuctionEnded();
+        }
 
         if (block.timestamp > endAt) {
             revert AuctionEnded();
         }
 
-        if (msg.value < highestBid) {
-            revert InsufficientFundsSent();
+        if (msg.value < highestBid + BID_INCREMENT) {
+            revert InsufficientETHSent();
         }
 
         if (highestBid != 0) {
@@ -96,12 +103,12 @@ contract MiyaTees is Ownable {
     /**
      * @dev Users can claim a refund
      */
-    function withdrawPendingReturns() external {
+    function withdrawPendingReturns() external nonReentrant {
         uint256 bal = pendingReturns[msg.sender];
         if (bal > 0) {
-            payable(msg.sender).transfer(bal);
             pendingReturns[msg.sender] = 0;
             emit RefundPaid();
+            SafeTransferLib.safeTransferETH(msg.sender, bal);
         }
         emit Withdraw(msg.sender, bal);
     }
@@ -109,13 +116,12 @@ contract MiyaTees is Ownable {
     /**
      * @dev End the auction
      */
-    function endAuction() external onlyOwner {
+    function endAuction() external nonReentrant {
+        if (block.timestamp > endAt) {
+            revert AuctionNotOver();
+        }
         if (!started) {
             revert AuctionNotStartedYet();
-        }
-
-        if (block.timestamp < endAt) {
-            revert AuctionNotOver();
         }
 
         if (ended) {
@@ -123,13 +129,11 @@ contract MiyaTees is Ownable {
         }
 
         ended = true;
+        // 🪲
         if (highestBidder != address(0)) {
-            // Assumption: the safe transfer functionality cannot be bricked since it is dealing with just one token.
+            // this line buggy still.. will test till works
             nft.safeTransferFrom(address(this), highestBidder, nftId);
-            (bool success,) = seller.call{value: highestBid}("");
-            if (!success) {
-                revert WithdrawFailed();
-            }
+            SafeTransferLib.safeTransferETH(seller, address(this).balance);
         } else {
             nft.safeTransferFrom(address(this), seller, nftId);
         }

@@ -1,0 +1,10 @@
+{
+  "wake.compiler.solc.remappings": [
+    "@src/=src/",
+    "@test/=test/",
+    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+    "@forge/=node_modules/forge-std/src/",
+    "ds-test/=node_modules/ds-test/src/",
+    "@solmate/=node_modules/solmate/src/"
+  ]
+}
