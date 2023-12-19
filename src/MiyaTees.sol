@@ -3,13 +3,9 @@ pragma solidity 0.8.16;
 
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {ReentrancyGuard} from "@solmate/utils/ReentrancyGuard.sol";
+import {ERC721TokenReceiver, ERC721} from "@solmate/tokens/ERC721.sol";
 
-interface IERC721 {
-    function safeTransferFrom(address from, address to, uint256 tokenId) external;
-    function transferFrom(address, address, uint256) external;
-}
-
-contract MiyaTees is ReentrancyGuard {
+contract MiyaTees is ReentrancyGuard, ERC721TokenReceiver {
     /*//////////////////////////////////////////////////////////////
                                 ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -40,7 +36,7 @@ contract MiyaTees is ReentrancyGuard {
     uint256 public highestBid;
     uint256 public immutable nftId;
     address payable public immutable seller;
-    IERC721 public immutable nft;
+    ERC721 public immutable nft;
     mapping(address => uint256) public pendingReturns;
 
     uint256 public constant AUCTION_DURATION = 3 days;
@@ -53,7 +49,7 @@ contract MiyaTees is ReentrancyGuard {
         if (_nft == address(0)) {
             revert ZeroAddress();
         }
-        nft = IERC721(_nft);
+        nft = ERC721(_nft);
         nftId = _nftId;
         seller = payable(_beneficiary);
     }
@@ -91,7 +87,7 @@ contract MiyaTees is ReentrancyGuard {
         }
 
         if (highestBid != 0) {
-            pendingReturns[highestBidder] += highestBid;
+            pendingReturns[msg.sender] += msg.value;
         }
 
         highestBidder = msg.sender;
@@ -104,13 +100,13 @@ contract MiyaTees is ReentrancyGuard {
      * @dev Users can claim a refund
      */
     function withdrawPendingReturns() external nonReentrant {
-        uint256 bal = pendingReturns[msg.sender];
-        if (bal > 0) {
-            pendingReturns[msg.sender] = 0;
-            emit RefundPaid();
-            SafeTransferLib.safeTransferETH(msg.sender, bal);
-        }
-        emit Withdraw(msg.sender, bal);
+        // uint256 bal = pendingReturns[msg.sender];
+        // if (bal > 0) {
+        //     pendingReturns[msg.sender] = 0;
+        //     emit RefundPaid();
+        //     SafeTransferLib.safeTransferETH(msg.sender, bal);
+        // }
+        // emit Withdraw(msg.sender, bal);
     }
 
     /**
@@ -139,5 +135,10 @@ contract MiyaTees is ReentrancyGuard {
         }
 
         emit End(highestBidder, highestBid);
+    }
+
+    // allows the contract receive 721 tokens
+    function onERC721Received(address, address, uint256, bytes calldata) public virtual override returns (bytes4) {
+        return ERC721TokenReceiver.onERC721Received.selector;
     }
 }

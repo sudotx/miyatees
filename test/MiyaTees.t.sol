@@ -82,6 +82,13 @@ contract MiyaTeeTest is Test {
 
     function testBidRefundsWork() public {
         // lmao doesnt work asf
+        testNextUserPaysTheAllotedBidIncrement();
+        vm.deal(address(0x1337), 10 ether);
+        vm.prank(address(0x1337));
+        miyaTees.bidTees{value: 5 ether}();
+
+        vm.prank(address(4));
+        miyaTees.withdrawPendingReturns();
     }
 
     function testAuctionEndsWithSellerGettingEthSentToTheContract() public {
