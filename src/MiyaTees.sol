@@ -20,7 +20,6 @@ contract MiyaTees is ReentrancyGuard, ERC721TokenReceiver {
     /*//////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
-    event RefundPaid();
     event BidPlaced(address indexed sender, uint256 amount);
     event AuctionStarted(uint256 endTime);
     event Withdraw(address indexed bidder, uint256 amount);
