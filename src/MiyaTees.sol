@@ -37,7 +37,7 @@ contract MiyaTees is ReentrancyGuard, ERC721TokenReceiver {
     uint256 public immutable nftId;
     address payable public immutable seller;
     ERC721 public immutable nft;
-    mapping(address => uint256) public pendingReturns;
+    mapping(address => uint256) public refunds;
 
     uint256 public constant AUCTION_DURATION = 3 days;
     uint256 public constant BID_INCREMENT = 0.05 ether;
@@ -87,7 +87,7 @@ contract MiyaTees is ReentrancyGuard, ERC721TokenReceiver {
         }
 
         if (highestBid != 0) {
-            pendingReturns[msg.sender] += msg.value;
+            refunds[msg.sender] += msg.value;
         }
 
         highestBidder = msg.sender;
@@ -100,13 +100,10 @@ contract MiyaTees is ReentrancyGuard, ERC721TokenReceiver {
      * @dev Users can claim a refund
      */
     function withdrawPendingReturns() external nonReentrant {
-        // uint256 bal = pendingReturns[msg.sender];
-        // if (bal > 0) {
-        //     pendingReturns[msg.sender] = 0;
-        //     emit RefundPaid();
-        //     SafeTransferLib.safeTransferETH(msg.sender, bal);
-        // }
-        // emit Withdraw(msg.sender, bal);
+        uint256 bal = refunds[msg.sender];
+        refunds[msg.sender] = 0;
+        emit Withdraw(msg.sender, bal);
+        SafeTransferLib.safeTransferETH(msg.sender, bal); 
     }
 
     /**
@@ -127,7 +124,6 @@ contract MiyaTees is ReentrancyGuard, ERC721TokenReceiver {
         ended = true;
         // 🪲
         if (highestBidder != address(0)) {
-            // this line buggy still.. will test till works
             nft.safeTransferFrom(address(this), highestBidder, nftId);
             SafeTransferLib.safeTransferETH(seller, address(this).balance);
         } else {
