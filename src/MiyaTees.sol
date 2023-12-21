@@ -122,7 +122,6 @@ contract MiyaTees is ReentrancyGuard, ERC721TokenReceiver {
         }
 
         ended = true;
-        // 🪲
         if (highestBidder != address(0)) {
             nft.safeTransferFrom(address(this), highestBidder, nftId);
             SafeTransferLib.safeTransferETH(seller, address(this).balance);
