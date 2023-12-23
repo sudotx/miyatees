@@ -13,27 +13,15 @@
     "test:unit": "forge test --match-path './test/unit/**' -vvv",
     "coverage": "forge coverage --fork-url $ETH_RPC_URL --match-path './test/**' --report lcov --report summary",
     "fork": "anvil --fork-url $ETH_RPC_URL --block-time 10 --chain-id 1337",
-    "deploy:local": "ETH_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 forge script scripts/DeployProposal.s.sol:DeployProposal -vvvv --rpc-url http://127.0.0.1:8545 --broadcast",
-    "prettier": "npx prettier --check 'src/**/*.sol'",
-    "prettier:fix": "npx prettier --write 'src/**/*.sol'"
+    "deploy:local": "ETH_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 forge script scripts/DeployProposal.s.sol:DeployProposal -vvvv --rpc-url http://127.0.0.1:8545 --broadcast"
   },
   "authors": "sudotx",
   "dependencies": {
     "ds-test": "https://github.com/dapphub/ds-test.git",
     "forge-std": "https://github.com/foundry-rs/forge-std",
-    "solmate": "^6.2.0"
+    "solady": "^0.0.152"
   },
   "devDependencies": {
-    "husky": "7.0.4",
-    "lint-staged": "12.2.0",
-    "prettier": "2.5.1",
-    "prettier-plugin-solidity": "1.0.0",
-    "solhint": "2.0.0",
-    "solhint-plugin-prettier": "0.0.5"
-  },
-  "lint-staged": {
-    "*.{sol}": [
-      "npx prettier --config .prettierrc 'src/**/*.sol' --write"
-    ]
+    "husky": "7.0.4"
   }
 }
