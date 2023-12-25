@@ -10,14 +10,9 @@ contract MiyaTeesAuction is Receiver {
                                 ERRORS
     //////////////////////////////////////////////////////////////*/
 
-    error InsufficientETHSent();
     error BidBelowReservePrice();
     error BidBelowCurrentBidIncrement();
     error CannotCreateAuction();
-    error AuctionNotOver();
-    error AuctionEnded();
-    error AuctionNotStartedYet();
-    error AuctionAlreadyStarted();
     error ZeroAddress();
     error NotOwner();
 
@@ -42,9 +37,6 @@ contract MiyaTeesAuction is Receiver {
     }
 
     AuctionData internal _auctionData;
-    uint256 public endAt;
-    bool public started;
-    bool public ended;
     address payable public immutable seller;
     address public immutable owner;
     IERC721 public immutable nft;
@@ -57,7 +49,6 @@ contract MiyaTeesAuction is Receiver {
 
     event BidPlaced(uint256 indexed nftId, address indexed sender, uint256 amount);
     event AuctionStarted(uint256 endTime);
-    event AuctionEnd(address winner, uint256 amount);
     event AuctionSettled(uint256 indexed nftId, address winner, uint256 amount);
     event AuctionExtended(uint256 indexed nftId, uint256 time);
     event AuctionDurationUpdated(uint256 amount);
@@ -324,7 +315,7 @@ contract MiyaTeesAuction is Receiver {
 
         _auctionData.settled = true;
         _auctionData.withdrawable = SafeCastLib.toUint96(withdrawable);
-        
+
         IERC721(miyaTees).transferFrom(address(this), bidder, MiyaTeeId);
 
         emit AuctionSettled(MiyaTeeId, bidder, amount);
