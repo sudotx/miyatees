@@ -5,8 +5,6 @@ import {Test} from "@forge/Test.sol";
 import {MiyaTeesAuction} from "@src/MiyaTees.sol";
 // import {MockERC721} from "@solmate/test/utils/mocks/MockERC721.sol";
 
-
-
 // contract MiyaTeeTest is Test {
 //     event RefundPaid();
 //     event BidPlaced(address indexed sender, uint256 amount);

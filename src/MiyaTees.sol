@@ -1,44 +1,33 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import {Ownable} from "@solady/auth/Ownable.sol";
 import {Receiver} from "@solady/accounts/Receiver.sol";
 import {SafeCastLib} from "@solady/utils/SafeCastLib.sol";
 import {SafeTransferLib} from "@solady/utils/SafeTransferLib.sol";
 
-contract MiyaTeesAuction is Receiver, Ownable {
+contract MiyaTeesAuction is Receiver {
     /*//////////////////////////////////////////////////////////////
                                 ERRORS
     //////////////////////////////////////////////////////////////*/
+
     error InsufficientETHSent();
+    error BidBelowReservePrice();
+    error BidBelowCurrentBidIncrement();
+    error CannotCreateAuction();
     error AuctionNotOver();
     error AuctionEnded();
     error AuctionNotStartedYet();
     error AuctionAlreadyStarted();
     error ZeroAddress();
+    error NotOwner();
 
     /*//////////////////////////////////////////////////////////////
-                                EVENTS
-    //////////////////////////////////////////////////////////////*/
-    event BidPlaced(address indexed sender, uint256 amount);
-    event AuctionStarted(uint256 endTime);
-    event End(address winner, uint256 amount);
-    event AuctionSettled(uint256 indexed nftId, address winner, uint256 amount);
-    event AuctionDurationUpdated(uint256 amount);
-    event AuctionBidIncrementUpdated(uint256 amount);
-
-    event AuctionTimeBufferUpdated(uint256 timeBuffer);
-
-    event AuctionReservePriceUpdated(uint256 reservePrice);
-
-    event AuctionReservePercentageUpdated(uint256 reservePercentage);
-
-    /*//////////////////////////////////////////////////////////////
-                            PRICING PARAMS
+                            AUCTION PARAMS
     //////////////////////////////////////////////////////////////*/
 
     struct AuctionData {
         address bidder;
+        uint256 miyaTeeId;
         uint96 amount;
         uint40 startTime;
         uint40 endTime;
@@ -53,19 +42,39 @@ contract MiyaTeesAuction is Receiver, Ownable {
     }
 
     AuctionData internal _auctionData;
-
     uint256 public endAt;
     bool public started;
     bool public ended;
-    address public highestBidder;
-    uint256 public highestBid;
-    uint256 public immutable nftId;
     address payable public immutable seller;
+    address public immutable owner;
     IERC721 public immutable nft;
-    mapping(address => uint256) public refunds;
-
     uint32 public constant AUCTION_DURATION = 3 days;
     uint96 public constant BID_INCREMENT = 0.05 ether;
+
+    /*//////////////////////////////////////////////////////////////
+                                EVENTS
+    //////////////////////////////////////////////////////////////*/
+
+    event BidPlaced(uint256 indexed nftId, address indexed sender, uint256 amount);
+    event AuctionStarted(uint256 endTime);
+    event AuctionEnd(address winner, uint256 amount);
+    event AuctionSettled(uint256 indexed nftId, address winner, uint256 amount);
+    event AuctionExtended(uint256 indexed nftId, uint256 time);
+    event AuctionDurationUpdated(uint256 amount);
+    event AuctionBidIncrementUpdated(uint256 amount);
+
+    event AuctionTimeBufferUpdated(uint256 timeBuffer);
+
+    event AuctionReservePriceUpdated(uint256 reservePrice);
+
+    event AuctionReservePercentageUpdated(uint256 reservePercentage);
+
+    modifier onlyOwner() {
+        if (msg.sender != owner) {
+            revert NotOwner();
+        }
+        _;
+    }
 
     constructor(
         address payable _beneficiary,
@@ -88,23 +97,30 @@ contract MiyaTeesAuction is Receiver, Ownable {
         _auctionData.timeBuffer = timeBuffer;
         _auctionData.reservePrice = reservePrice;
         _auctionData.reservePercentage = reservePercentage;
+        _auctionData.miyaTeeId = _nftId;
 
-        nft = IERC721(_miyaTees);
-        nftId = _nftId;
+        owner = msg.sender;
         seller = payable(_beneficiary);
+        nft = IERC721(_miyaTees);
 
-        nft.transferFrom(msg.sender, address(this), nftId);
+        nft.transferFrom(msg.sender, address(this), _nftId);
     }
 
     /*//////////////////////////////////////////////////////////////
                     PUBLIC/EXTERNAL VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /*
+     * @notice This will check if an auction is still running
+     */
     function hasEnded() public view returns (bool) {
         // fix this
         return block.timestamp >= AUCTION_DURATION;
     }
 
+    /*
+     * @notice This returns the current auction associated data
+     */
     function auctionData() public view returns (AuctionData memory data) {
         data = _auctionData;
     }
@@ -112,12 +128,21 @@ contract MiyaTeesAuction is Receiver, Ownable {
     /*//////////////////////////////////////////////////////////////
                     PUBLIC/EXTERNAL WRITE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /*
+     * @notice This allows users to bid on tees
+     *  it automatically creates an auction if one is not running at the moment, with default data
+     * also settles an outstanding auction, lastly it refunds the previous bidder its deposited eth
+     * bid has to be above reserve price + bid increment in the case where the user is not the first to bid on the item
+     * extends the time for the auction if a bid comes in within the auctions time buffer
+     */
     function bidTees() external payable {
         require(gasleft() > 150000);
 
         // auto auction creation and settlement
 
         bool creationFailed;
+        //! need to go over this bit more, to make sure it works as intended
         if (_auctionData.startTime == 0) {
             // if auction not created
             // create a new auction
@@ -138,7 +163,9 @@ contract MiyaTeesAuction is Receiver, Ownable {
             }
         }
 
-        require(!creationFailed, "cannot create auction");
+        if (creationFailed) {
+            revert CannotCreateAuction();
+        }
 
         // bidding logic
 
@@ -146,30 +173,34 @@ contract MiyaTeesAuction is Receiver, Ownable {
         uint256 amount = _auctionData.amount;
         uint256 endTime = _auctionData.endTime;
 
+        uint256 miyaTeeId = _auctionData.miyaTeeId;
+
         if (amount == 0) {
-            require(msg.value > _auctionData.reservePrice, "bid below reserve price");
+            if (msg.value < _auctionData.reservePrice) {
+                revert BidBelowReservePrice();
+            }
         } else {
-            require(msg.value > amount + _auctionData.bidIncrement);
+            if (msg.value < amount + _auctionData.bidIncrement) {
+                revert BidBelowCurrentBidIncrement();
+            }
         }
 
         _auctionData.bidder = msg.sender;
         _auctionData.amount = SafeCastLib.toUint96(msg.value);
 
         if (_auctionData.timeBuffer == 0) {
-            // emit auction bid
-            // emit AuctionBid(bonklerId, msg.sender, msg.value, false);
-            emit BidPlaced(msg.sender, msg.value);
+            emit BidPlaced(miyaTeeId, msg.sender, msg.value);
         } else {
             // Extend the auction if the bid was received within `timeBuffer` of the auction end time.
             uint256 extendedTime = block.timestamp + _auctionData.timeBuffer;
             // Whether the current timestamp falls within the time extension buffer period.
             bool extended = endTime < extendedTime;
-            // emit AuctionBid(bonklerId, msg.sender, msg.value, extended);
-            emit BidPlaced(msg.sender, msg.value);
+            // emit AuctionBid(miyaTeeId, msg.sender, msg.value, extended);
+            emit BidPlaced(miyaTeeId, msg.sender, msg.value);
 
             if (extended) {
                 _auctionData.endTime = SafeCastLib.toUint40(extendedTime);
-                // emit AuctionExtended(bonklerId, extendedTime);
+                emit AuctionExtended(miyaTeeId, extendedTime);
             }
         }
 
@@ -179,11 +210,11 @@ contract MiyaTeesAuction is Receiver, Ownable {
         }
     }
 
+    /*
+     * @notice This settles the current running auction
+     */
     function settleAuction() external {
-        require(block.timestamp > endAt);
-        require(started);
-        require(!ended);
-        // require(block.timestamp >= _auctionData.endTime);
+        require(block.timestamp > _auctionData.endTime);
         require(_auctionData.startTime != 0);
         require(_auctionData.bidder != address(0));
         require(!_auctionData.settled);
@@ -193,34 +224,55 @@ contract MiyaTeesAuction is Receiver, Ownable {
     /*//////////////////////////////////////////////////////////////
                         ADMIN WRITE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /*
+     * @notice This allows the admin to withdraw eth
+     */
     function withdrawETH() external onlyOwner {
         uint256 amount = _auctionData.withdrawable;
         _auctionData.withdrawable = 0;
         SafeTransferLib.forceSafeTransferETH(msg.sender, amount);
     }
 
-    function setReservePrice(uint8 reservePercentage) external onlyOwner {
-        _checkReservePercentage(reservePercentage);
-        _auctionData.reservePercentage = reservePercentage;
-        emit AuctionReservePriceUpdated(reservePercentage);
+    /*
+     * @notice This allows the admin to set the lowest possible bid price for the item
+     */
+    function setReservePrice(uint8 reservePrice) external onlyOwner {
+        _checkReservePrice(reservePrice);
+        _auctionData.reservePrice = reservePrice;
+        emit AuctionReservePriceUpdated(reservePrice);
     }
 
+    /*
+     * @notice This allows the admin to set the bid increment for the auction
+     */
     function setBidIncrement(uint96 bidIncrement) external onlyOwner {
         _checkBidIncrement(bidIncrement);
         _auctionData.bidIncrement = bidIncrement;
         emit AuctionBidIncrementUpdated(bidIncrement);
     }
 
+    /*
+     * @notice This allows the admin to set the duration for the auction
+     */
     function setDuration(uint32 duration) external onlyOwner {
         _checkDuration(duration);
         _auctionData.duration = duration;
         emit AuctionDurationUpdated(duration);
     }
 
+    /*
+     * @notice This allows the admin to set the time buffer for the auction
+     */
     function setTimeBuffer(uint32 timeBuffer) external onlyOwner {
         _auctionData.timeBuffer = timeBuffer;
         emit AuctionTimeBufferUpdated(timeBuffer);
     }
+
+    /*
+     * @notice This allows the admin to set the percentage of funds to leave in the contract on withdrawal, the max withdrawable amount 
+     * depends on this value
+     */
 
     function setReservePercentage(uint8 reservePercentage) external onlyOwner {
         _checkReservePercentage(reservePercentage);
@@ -232,19 +284,31 @@ contract MiyaTeesAuction is Receiver, Ownable {
                         INTERNAL/PRIVATE HELPERS
     //////////////////////////////////////////////////////////////*/
 
-    function _createAuction() internal returns (bool) {
-        uint256 endT = block.timestamp + AUCTION_DURATION;
+    /*
+     * @notice This creates a new auction
+     * this assigns default values to the auction
+     * ideally these will be overwritten by the actual values
+     */
 
+    function _createAuction() internal returns (bool) {
+        uint256 endTime = block.timestamp + AUCTION_DURATION;
+        //! might lead to issues, test this does become problematic
         _auctionData.bidder = address(1);
+        _auctionData.miyaTeeId = 0;
         _auctionData.amount = 0;
         _auctionData.startTime = SafeCastLib.toUint40(block.timestamp);
-        _auctionData.endTime = SafeCastLib.toUint40(endT);
+        _auctionData.endTime = SafeCastLib.toUint40(endTime);
         _auctionData.settled = false;
 
-        emit AuctionStarted(endT);
+        emit AuctionStarted(endTime);
 
         return true;
     }
+
+    /*
+     * @notice This settles the auction, by sending out the nft associated with the auction
+     * also setting its status to true
+     */
 
     function _settleAuction() internal {
         address bidder = _auctionData.bidder;
@@ -253,28 +317,48 @@ contract MiyaTeesAuction is Receiver, Ownable {
         uint256 reservePercentage = _auctionData.reservePercentage;
         address miyaTees = _auctionData.miyaTees;
 
+        uint256 MiyaTeeId = _auctionData.miyaTeeId;
+
         uint256 miyaShares = amount * reservePercentage / 100;
         withdrawable += amount - miyaShares;
 
-        IERC721(miyaTees).transferFrom(address(this), bidder, nftId);
+        IERC721(miyaTees).transferFrom(address(this), bidder, MiyaTeeId);
 
         _auctionData.settled = true;
         _auctionData.withdrawable = SafeCastLib.toUint96(withdrawable);
 
-        emit AuctionSettled(nftId, bidder, amount);
+        emit AuctionSettled(MiyaTeeId, bidder, amount);
     }
+
+    /*
+     * @notice This performs sanity check on the value to be set as the reseve percentage
+     * making sure it never exceeds 100%
+     */
 
     function _checkReservePercentage(uint8 reservePercentage) internal pure {
         require(reservePercentage < 101, "reserve % exceeds 100");
     }
 
+    /*
+     * @notice This performs sanity checks on the reserve price
+     * making sure it is always greater than zero
+     */
     function _checkReservePrice(uint96 reservePrice) internal pure {
         require(reservePrice != 0, "reserve price must be greater than 0");
     }
 
+    /*
+     * @notice This performs sanity checks making sure it is 
+     * always greater than zero
+     */
     function _checkBidIncrement(uint96 bidIncrement) internal pure {
         require(bidIncrement != 0, "bid increment must be greater than 0");
     }
+
+    /*
+     * @notice This performs sanity checks making sure it is always 
+     * greater than zero
+     */
 
     function _checkDuration(uint32 duration) internal pure {
         require(duration != 0, "duration must be greater than 0");
