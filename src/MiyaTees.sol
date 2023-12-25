@@ -322,10 +322,10 @@ contract MiyaTeesAuction is Receiver {
         uint256 miyaShares = amount * reservePercentage / 100;
         withdrawable += amount - miyaShares;
 
-        IERC721(miyaTees).transferFrom(address(this), bidder, MiyaTeeId);
-
         _auctionData.settled = true;
         _auctionData.withdrawable = SafeCastLib.toUint96(withdrawable);
+        
+        IERC721(miyaTees).transferFrom(address(this), bidder, MiyaTeeId);
 
         emit AuctionSettled(MiyaTeeId, bidder, amount);
     }
