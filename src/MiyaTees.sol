@@ -33,7 +33,6 @@ contract MiyaTeesAuction is Receiver {
         uint96 reservePrice;
         uint96 bidIncrement;
         uint32 duration;
-        uint32 timeBuffer;
     }
 
     AuctionData internal _auctionData;
@@ -50,11 +49,8 @@ contract MiyaTeesAuction is Receiver {
     event BidPlaced(uint256 indexed nftId, address indexed sender, uint256 amount);
     event AuctionStarted(uint256 endTime);
     event AuctionSettled(uint256 indexed nftId, address winner, uint256 amount);
-    event AuctionExtended(uint256 indexed nftId, uint256 time);
     event AuctionDurationUpdated(uint256 amount);
     event AuctionBidIncrementUpdated(uint256 amount);
-
-    event AuctionTimeBufferUpdated(uint256 timeBuffer);
 
     event AuctionReservePriceUpdated(uint256 reservePrice);
 
@@ -72,7 +68,6 @@ contract MiyaTeesAuction is Receiver {
         address _miyaTees,
         uint256 _nftId,
         uint96 reservePrice,
-        uint32 timeBuffer,
         uint8 reservePercentage
     ) payable {
         if (_beneficiary == address(0)) {
@@ -85,7 +80,6 @@ contract MiyaTeesAuction is Receiver {
         _auctionData.duration = AUCTION_DURATION;
         _auctionData.bidIncrement = BID_INCREMENT;
         _auctionData.miyaTees = _miyaTees;
-        _auctionData.timeBuffer = timeBuffer;
         _auctionData.reservePrice = reservePrice;
         _auctionData.reservePercentage = reservePercentage;
         _auctionData.miyaTeeId = _nftId;
@@ -105,8 +99,7 @@ contract MiyaTeesAuction is Receiver {
      * @notice This will check if an auction is still running
      */
     function hasEnded() public view returns (bool) {
-        // fix this
-        return block.timestamp >= AUCTION_DURATION;
+        return block.timestamp >= _auctionData.duration;
     }
 
     /*
@@ -162,7 +155,6 @@ contract MiyaTeesAuction is Receiver {
 
         address lastBidder = _auctionData.bidder;
         uint256 amount = _auctionData.amount;
-        uint256 endTime = _auctionData.endTime;
 
         uint256 miyaTeeId = _auctionData.miyaTeeId;
 
@@ -179,21 +171,7 @@ contract MiyaTeesAuction is Receiver {
         _auctionData.bidder = msg.sender;
         _auctionData.amount = SafeCastLib.toUint96(msg.value);
 
-        if (_auctionData.timeBuffer == 0) {
-            emit BidPlaced(miyaTeeId, msg.sender, msg.value);
-        } else {
-            // Extend the auction if the bid was received within `timeBuffer` of the auction end time.
-            uint256 extendedTime = block.timestamp + _auctionData.timeBuffer;
-            // Whether the current timestamp falls within the time extension buffer period.
-            bool extended = endTime < extendedTime;
-            // emit AuctionBid(miyaTeeId, msg.sender, msg.value, extended);
-            emit BidPlaced(miyaTeeId, msg.sender, msg.value);
-
-            if (extended) {
-                _auctionData.endTime = SafeCastLib.toUint40(extendedTime);
-                emit AuctionExtended(miyaTeeId, extendedTime);
-            }
-        }
+        emit BidPlaced(miyaTeeId, msg.sender, msg.value);
 
         if (amount != 0) {
             // refund last bidder
@@ -250,14 +228,6 @@ contract MiyaTeesAuction is Receiver {
         _checkDuration(duration);
         _auctionData.duration = duration;
         emit AuctionDurationUpdated(duration);
-    }
-
-    /*
-     * @notice This allows the admin to set the time buffer for the auction
-     */
-    function setTimeBuffer(uint32 timeBuffer) external onlyOwner {
-        _auctionData.timeBuffer = timeBuffer;
-        emit AuctionTimeBufferUpdated(timeBuffer);
     }
 
     /*
