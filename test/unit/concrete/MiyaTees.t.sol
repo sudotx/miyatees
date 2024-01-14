@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.16;
 
-import {Test} from "@forge/Test.sol";
+import {Test, console} from "@forge/Test.sol";
 import {MiyaTeesAuction} from "@src/MiyaTees.sol";
 import {MockERC721} from "@solmate/test/utils/mocks/MockERC721.sol";
 // import mocks
@@ -22,6 +22,7 @@ contract MiyaTeeTest is Test {
         token = new MockERC721("MiyaTee", "MYT"); // miya tee
 
         seller = address(0x1337);
+        console.log(seller);
         vm.deal(address(seller), 1 ether);
 
         token.mint(address(seller), 1337); // mint the token to the seller
