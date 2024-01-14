@@ -19,7 +19,8 @@
   "dependencies": {
     "ds-test": "https://github.com/dapphub/ds-test.git",
     "forge-std": "https://github.com/foundry-rs/forge-std",
-    "solady": "^0.0.152"
+    "solady": "^0.0.152",
+    "solmate": "^6.2.0"
   },
   "devDependencies": {
     "husky": "7.0.4"

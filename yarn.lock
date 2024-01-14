@@ -19,3 +19,8 @@ solady@^0.0.152:
   version "0.0.152"
   resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.152.tgz#ce9bfb9268136b4181933dcb5f40c945df3e4721"
   integrity sha512-E9Smi940EFr4CEz9XzkO7JVnEHBVH4Gqc47r2c44L0ReN2NVYaukPL1xPvuDxxXnWS6JoAeD4jx9YGhNHJ91Lw==
+
+solmate@^6.2.0:
+  version "6.2.0"
+  resolved "https://registry.yarnpkg.com/solmate/-/solmate-6.2.0.tgz#edd29b5f3d6faafafdcf65fe4d1d959b4841cfa8"
+  integrity sha512-AM38ioQ2P8zRsA42zenb9or6OybRjOLXIu3lhIT8rhddUuduCt76pUEuLxOIg9GByGojGz+EbpFdCB6B+QZVVA==
