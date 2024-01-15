@@ -15,4 +15,12 @@ contract MiyaTeesForkTest is Test {
         uint256 mainnetFork = vm.createSelectFork("mainnet", 42_000_069);
         console.log(mainnetFork);
     }
+
+    function testFork_createAuctionWorks() public {}
+    function testFork_settleAuctionWorks() public {}
+    function testFork_FundsPayoutSuccessfully() public {}
+    function testFork_SendsNftInCorrectly() public {}
+    function testFork_SendsNftOutCorrectly() public {}
+    function testFork_AuctionParametersAreSetCorrectlyOnConstruction() public {}
+    function testFork_OnlyOwnerCanSetAuctionParameters() public {}
 }

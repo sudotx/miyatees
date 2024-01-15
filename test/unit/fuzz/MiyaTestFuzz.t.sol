@@ -12,7 +12,18 @@ contract MiyaTeesFuzzTest is Test {
     MiyaTeesAuction public miyaTees;
     MockERC721 public mockToken;
 
-    function setUp() public {}
+    function setUp() public {
+        console.log("setting up...");
+
+        mockToken = new MockERC721("MiyaTee", "MT");
+        vm.label(address(mockToken), "MOCK_MIYATEE");
+        mockToken.mint(address(1), 1337);
+
+        miyaTees = new MiyaTeesAuction(payable(address(0)), address(mockToken), 1337, 1, 1);
+        vm.label(address(miyaTees), "MIYATEES_AUCTION");
+
+        vm.label(address(this), "THE_FUZZINATOR");
+    }
 
     function testFuzz_createBid() public {}
     function testFuzz_addLiquidity() public {}
