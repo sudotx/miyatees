@@ -1,8 +1,10 @@
 bidTees.t.sol
 
-# when no action auction exists
-## it should create a new auction, with default values
-# when an auction exists
-## if current msg.sender bids higher
-###it should refund the previous msg.sender a bit less than was sent in..
-##
+├── when no auction exists
+│   ├── given msgsender is a contract
+│   │   └── it should revert
+│   └── given msgsender is an EOA
+│       └── it should create a new auction, with default values
+└── given an auction exists
+    └── given current msgsender bids higher
+        └── it should refund the previous msgsender a bit less than was sent in
