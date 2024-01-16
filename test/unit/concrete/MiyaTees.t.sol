@@ -4,7 +4,6 @@ pragma solidity 0.8.16;
 import {Test, console} from "@forge/Test.sol";
 import {MiyaTeesAuction} from "@src/MiyaTees.sol";
 import {MockERC721} from "@solmate/test/utils/mocks/MockERC721.sol";
-// import mocks
 
 contract MiyaTeeTest is Test {
     event RefundPaid();
@@ -18,6 +17,9 @@ contract MiyaTeeTest is Test {
 
     address seller;
 
+    address public constant Alice = address(0x1212);
+    address public constant Bob = address(0x2323);
+
     modifier prank(address who) {
         vm.startPrank(who);
         _;
@@ -25,7 +27,7 @@ contract MiyaTeeTest is Test {
     }
 
     function setUp() public {
-        token = new MockERC721("MiyaTee", "MYT"); // miya tee
+        token = new MockERC721("MiyaTee", "MYT"); // miya tees
         vm.label(address(token), "MOCK_MIYATEE");
 
         seller = address(0x1337);
@@ -40,46 +42,97 @@ contract MiyaTeeTest is Test {
         token.setApprovalForAll(address(miyaTees), true);
     }
 
-    //happy paths
     function testAuctionContractCanReceiveNFT() public {
         // on construction, the auction has to receive
     }
-    function address2Action() public prank(address(0x1337)) {
+
+    function address2Action() public prank(Alice) {
         // something somehthing...
         /// something ..
     }
+
     function testAuctionContractReceivesNFTToBeBiddedOnAtAuctionStart() public {}
+
     function testAuctionDurationisCorrectlySet() public {}
-    function testBidTeesWorksCorrectly() public {
-        //? test very well, complexity in the creation of auction if one is not currently active
-        //? safe transfer eth to sender, if an auction is currently active
-        //? the value that was sent to it
-        //? 🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲🪲 waters 🪲🪲🪲🪲🪲
-    }
-    function testSettleAuctionWorksCorrectly() public {}
+
     function testSettleAuctionCannotBeCalledIfItIsBeforeTheAuctionExpiry() public {}
+
     function testSettleAuctionCantBeCalledIfTheAuctionTimeIsNotZero() public {}
+
     function testSettleAuctionBidderIsNotTheZeroAddress() public {}
+
     function testSettleAuctionDataIsSettled() public {}
+
     function testAuctionBidIncrementisCorrectlySet() public {}
+
     function testAuctionMiyaTeesContractisCorrectlySet() public {}
+
     function testAuctionReservePriceisCorrectlySet() public {}
+
     function testAuctionMiyaTeeIDisCorrectlySet() public {}
-    function testNFTisSentFromTheUserToThisContract() public {}
-    function testAuctionhasEndedReturnsFalseWhenAuctionRoundIsOnGoing() public {}
-    function testAuctionhasEndedReturnsTrueWhenAuctionRoundIsEnded() public {}
-    function testBidTeesForTheFirstTimeWorksCorrectly() public {}
-    function testBidTeesEndsPreviousRunningAuctionRoundCorrectly() public {}
-    function testLastBidderReceivesTheETHSuccesfulyReceivesRefund() public {}
-    function testBidSuccessfullyCreatesANewAuction() public {}
-    function testSettleAuctionWorksSuccesfully() public {}
-    function testOnlyOwnerCanWithdrawETH() public {}
-    function testContractIsNotBrickedIfReceiverIsAContractThatRevertsOnReceive() public {}
-    function onlyOwnerCanSetReservePrice() public {}
-    function auctionDurationCanNotBeSetToZero() public {}
-    function ReservePriceCannotBeSetToZero() public {}
-    function OnlyOwnerCanSetBidIncrement() public {}
-    function OnlyOwnerCanSetDuration() public {}
-    function OnlyOwnerCanSetReservePercentage() public {}
-    function settleAuctionSendsTheNFTCorrectly() public {}
+
+    function testNFTisSentFromTheUserToThisContract() public {
+        // fail if nft os not sent to the contract as expected. 
+    }
+
+    function testAuctionhasEndedReturnsFalseWhenAuctionRoundIsOnGoing() public {
+        // this should return false
+    }
+
+    function testAuctionhasEndedReturnsTrueWhenAuctionRoundIsEnded() public {
+        // auction ended function should return correctly
+    }
+
+    function testBidTeesEndsPreviousRunningAuctionRoundCorrectly() public {
+        // round should end with certain states being fufullled
+    }
+
+    function testLastBidderReceivesTheETHSuccesfulyReceivesRefund() public {
+        // last bidder receives ETH set to it
+    }
+
+    function testBidSuccessfullyCreatesANewAuction() public {
+        // bid should create a new auction when called
+    }
+
+    function testRevert_NotOwnerCantWithdrawETH() public {
+        // try withdrawing this 
+        // test should revert 
+    }
+    function testOwnerCanWithdrawETH() public prank(Alice) {
+        // owner can collect eth in the contract
+    }
+
+    function testContractIsNotBrickedIfReceiverIsAContractThatRevertsOnReceive() public {
+        // contract is not bricked if the last bidder happens to be a contract that reverts on receive
+    }
+
+    function onlyOwnerCanSetReservePrice() public {
+        // only owner can call this function
+    }
+
+    function auctionDurationCanNotBeSetToZero() public {
+        // internal check works as expected
+    }
+
+    function ReservePriceCannotBeSetToZero() public {
+        // internal price can not be set to zero
+    }
+
+    function OnlyOwnerCanSetBidIncrement() public {
+        // owner can set this value
+    }
+
+    function OnlyOwnerCanSetDuration() public {
+        // owner can set duration
+    }
+
+    function OnlyOwnerCanSetReservePercentage() public {
+        // owner can set this value alone
+    }
+
+    function settleAuctionSendsTheNFTCorrectly() public {
+        // auction should send the NFTs to the bid winner after the 
+        // timer has passed
+    }
 }
