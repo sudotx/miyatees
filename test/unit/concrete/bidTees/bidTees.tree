@@ -1,0 +1,8 @@
+bidTees.t.sol
+
+# when no action auction exists
+## it should create a new auction, with default values
+# when an auction exists
+## if current msg.sender bids higher
+###it should refund the previous msg.sender a bit less than was sent in..
+##

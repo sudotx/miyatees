@@ -18,8 +18,15 @@ contract MiyaTeeTest is Test {
 
     address seller;
 
+    modifier prank(address who) {
+        vm.startPrank(who);
+        _;
+        vm.stopPrank();
+    }
+
     function setUp() public {
         token = new MockERC721("MiyaTee", "MYT"); // miya tee
+        vm.label(address(token), "MOCK_MIYATEE");
 
         seller = address(0x1337);
         console.log(seller);
@@ -34,7 +41,13 @@ contract MiyaTeeTest is Test {
     }
 
     //happy paths
-    function testAuctionContractCanReceiveNFT() public {}
+    function testAuctionContractCanReceiveNFT() public {
+        // on construction, the auction has to receive
+    }
+    function address2Action() public prank(address(0x1337)) {
+        // something somehthing...
+        /// something ..
+    }
     function testAuctionContractReceivesNFTToBeBiddedOnAtAuctionStart() public {}
     function testAuctionDurationisCorrectlySet() public {}
     function testBidTeesWorksCorrectly() public {

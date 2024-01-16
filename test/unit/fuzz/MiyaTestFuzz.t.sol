@@ -25,11 +25,17 @@ contract MiyaTeesFuzzTest is Test {
         vm.label(address(this), "THE_FUZZINATOR");
     }
 
-    function testFuzz_createBid() public {}
-    function testFuzz_addLiquidity() public {}
-    function testFuzz_removeLiquidity() public {}
-    function testFuzz_settleAuction() public {}
-    function testFuzz_createAuction() public {}
-    function testFuzz_tweakProtocolValues() public {}
-    function testFuzz_tweakOnlyOwnerFunctions() public {}
+    function testFuzz_createBid(uint256 amount) public {
+        // uint256 _amount = this.bound(amount, (10**3), MAX);
+    }
+    function testFuzz_addLiquidity(uint256 amount) public {}
+    function testFuzz_removeLiquidity(uint256 amount) public {}
+    function testFuzz_settleAuction(uint256 amount) public {}
+    function testFuzz_createAuction(uint256 amount) public {}
+    function testFuzz_tweakProtocolValues(uint256 amount) public {}
+    function testFuzz_tweakOnlyOwnerFunctions(uint256 amount) public {}
+
+    // create a bound/between function to constrain values and reduce wasted fuzz runs
+
+    // try using echidna here as well..
 }

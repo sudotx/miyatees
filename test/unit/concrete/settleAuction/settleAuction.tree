@@ -1,0 +1,3 @@
+##it should settle already running contract
+## should revert if no current running auction, or current runniing contract time is not yet elapsed
+###it should leave the contract in a state where only the admin funds is left still in the contract
