@@ -101,8 +101,6 @@ contract MiyaTeesAuction is Receiver {
         owner = msg.sender;
         seller = payable(_beneficiary);
         nft = IERC721(_miyaTees);
-
-        nft.transferFrom(msg.sender, address(this), _nftId);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -134,7 +132,7 @@ contract MiyaTeesAuction is Receiver {
      * bid has to be above reserve price + bid increment in the case where the user is not the first to bid on the item
      * extends the time for the auction if a bid comes in within the auctions time buffer
      */
-    function bidTees() external payable {
+    function bidTees(uint256 id) external payable {
         require(gasleft() > 150000);
 
         // auto auction creation and settlement
@@ -144,16 +142,16 @@ contract MiyaTeesAuction is Receiver {
         if (_auctionData.startTime == 0) {
             // if auction not created
             // create a new auction
-            creationFailed = !_createAuction();
+            creationFailed = !_createAuction(id);
         } else if (hasEnded()) {
             // if auction has ended, and is settled. try creating a new one
             if (_auctionData.settled) {
-                creationFailed = !_createAuction();
+                creationFailed = !_createAuction(id);
             } else {
                 // if auction has ended, but not settled. settle it
                 _settleAuction();
                 // try creating new one, after settling previous
-                if (!_createAuction()) {
+                if (!_createAuction(id)) {
                     // if creation failed refund all ETH sent
                     SafeTransferLib.forceSafeTransferETH(msg.sender, msg.value);
                     return;
@@ -265,7 +263,7 @@ contract MiyaTeesAuction is Receiver {
      * ideally these will be overwritten by the actual values
      */
 
-    function _createAuction() internal returns (bool) {
+    function _createAuction(uint256 _nftId) internal returns (bool) {
         uint256 endTime = block.timestamp + AUCTION_DURATION;
         //! might lead to issues, test this does become problematic
         _auctionData.bidder = address(1);
@@ -274,6 +272,8 @@ contract MiyaTeesAuction is Receiver {
         _auctionData.startTime = SafeCastLib.toUint40(block.timestamp);
         _auctionData.endTime = SafeCastLib.toUint40(endTime);
         _auctionData.settled = false;
+
+        nft.transferFrom(owner, address(this), _nftId);
 
         emit AuctionStarted(endTime);
 
@@ -342,4 +342,5 @@ contract MiyaTeesAuction is Receiver {
 
 interface IERC721 {
     function transferFrom(address from, address to, uint256 id) external;
+    function approve(address from, uint256 id) external;
 }

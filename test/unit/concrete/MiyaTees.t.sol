@@ -15,10 +15,11 @@ contract MiyaTeeTest is Test {
     MiyaTeesAuction public miyaTees;
     MockERC721 token;
 
-    address seller;
+    address constant BOB = address(0x2323);
+    address constant ALICE = address(0x1212);
+    address constant SELLER = address(0x1337);
 
-    address public constant Alice = address(0x1212);
-    address public constant Bob = address(0x2323);
+    uint256 constant TOKENID = 1337;
 
     modifier prank(address who) {
         vm.startPrank(who);
@@ -27,28 +28,20 @@ contract MiyaTeeTest is Test {
     }
 
     function setUp() public {
+        console.log("setting up...");
         token = new MockERC721("MiyaTee", "MYT"); // miya tees
-        vm.label(address(token), "MOCK_MIYATEE");
 
-        seller = address(0x1337);
-        console.log(seller);
-        vm.deal(address(seller), 1 ether);
+        vm.label(address(token), "MIYATEE");
+        vm.label(address(miyaTees), "MIYATEE_AUCTION");
 
-        token.mint(address(seller), 1337); // mint the token to the seller
+        token.mint(SELLER, TOKENID); // the user has to have the token, to send to the contract
 
-        miyaTees = new MiyaTeesAuction(payable(address(seller)), address(token), 1337, 1, 1);
+        vm.startPrank(SELLER);
+        miyaTees = new MiyaTeesAuction(payable(SELLER), address(token), 1337, 1, 1);
+        token.approve(address(miyaTees), TOKENID);
+        vm.stopPrank();
 
-        vm.prank(address(seller));
-        token.setApprovalForAll(address(miyaTees), true);
-    }
-
-    function testAuctionContractCanReceiveNFT() public {
-        // on construction, the auction has to receive
-    }
-
-    function address2Action() public prank(Alice) {
-        // something somehthing...
-        /// something ..
+        console.log("Token Balance Of MiyaTeesAuction", token.balanceOf(address(miyaTees)));
     }
 
     function testAuctionContractReceivesNFTToBeBiddedOnAtAuctionStart() public {}
@@ -67,9 +60,13 @@ contract MiyaTeeTest is Test {
 
     function testAuctionMiyaTeesContractisCorrectlySet() public {}
 
-    function testAuctionReservePriceisCorrectlySet() public {}
+    function testAuctionReservePriceisCorrectlySet() public {
+        // critica; values should be set 
+    }
 
-    function testAuctionMiyaTeeIDisCorrectlySet() public {}
+    function testAuctionMiyaTeeIDisCorrectlySet() public {
+        // critica; values should be set 
+    }
 
     function testNFTisSentFromTheUserToThisContract() public {
         // fail if nft os not sent to the contract as expected. 
@@ -99,7 +96,7 @@ contract MiyaTeeTest is Test {
         // try withdrawing this 
         // test should revert 
     }
-    function testOwnerCanWithdrawETH() public prank(Alice) {
+    function testOwnerCanWithdrawETH() public prank(ALICE) {
         // owner can collect eth in the contract
     }
 

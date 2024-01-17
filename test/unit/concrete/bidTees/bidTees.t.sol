@@ -1,8 +1,7 @@
-import {MiyaTeesTest} from "../../../utils/MiyaTees.t.sol";
 
 pragma solidity 0.8.0;
 
-contract bidTeestsol is MiyaTeesTest {
+contract bidTeestsol {
     modifier whenNoAuctionExists() {
         _;
     }
