@@ -61,15 +61,15 @@ contract MiyaTeeTest is Test {
     function testAuctionMiyaTeesContractisCorrectlySet() public {}
 
     function testAuctionReservePriceisCorrectlySet() public {
-        // critica; values should be set 
+        // critica; values should be set
     }
 
     function testAuctionMiyaTeeIDisCorrectlySet() public {
-        // critica; values should be set 
+        // critica; values should be set
     }
 
     function testNFTisSentFromTheUserToThisContract() public {
-        // fail if nft os not sent to the contract as expected. 
+        // fail if nft os not sent to the contract as expected.
     }
 
     function testAuctionhasEndedReturnsFalseWhenAuctionRoundIsOnGoing() public {
@@ -93,8 +93,8 @@ contract MiyaTeeTest is Test {
     }
 
     function testRevert_NotOwnerCantWithdrawETH() public {
-        // try withdrawing this 
-        // test should revert 
+        // try withdrawing this
+        // test should revert
     }
     function testOwnerCanWithdrawETH() public prank(ALICE) {
         // owner can collect eth in the contract
@@ -129,7 +129,7 @@ contract MiyaTeeTest is Test {
     }
 
     function settleAuctionSendsTheNFTCorrectly() public {
-        // auction should send the NFTs to the bid winner after the 
+        // auction should send the NFTs to the bid winner after the
         // timer has passed
     }
 }

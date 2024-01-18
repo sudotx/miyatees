@@ -101,10 +101,10 @@ contract MiyaTeesAuction is Receiver {
         owner = msg.sender;
         seller = payable(_beneficiary);
         nft = IERC721(_miyaTees);
-        nft.setApprovalForAll(address(this), true);
+        nft.approve(address(this), _nftId);
     }
 
-/*//////////////////////////////////////////////////////////////
+    /*//////////////////////////////////////////////////////////////
                     PUBLIC/EXTERNAL VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
@@ -194,8 +194,9 @@ contract MiyaTeesAuction is Receiver {
 
     /*
      * @notice This settles the current running auction
+     * can be replaced by a trusted keeper
      */
-    function settleAuction() external {
+    function settleAuction() external onlyOwner {
         require(block.timestamp > _auctionData.endTime);
         require(_auctionData.startTime != 0);
         require(_auctionData.bidder != address(0));
@@ -345,5 +346,4 @@ contract MiyaTeesAuction is Receiver {
 interface IERC721 {
     function transferFrom(address from, address to, uint256 id) external;
     function approve(address from, uint256 id) external;
-    function setApprovalForAll(address operator, bool approved) external;
 }
