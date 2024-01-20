@@ -101,8 +101,6 @@ contract MiyaTeesAuction is Receiver {
         owner = msg.sender;
         seller = payable(_beneficiary);
         nft = IERC721(_miyaTees);
-
-        nft.setApprovalForAll(address(this), true);
     }
 
 /*//////////////////////////////////////////////////////////////
