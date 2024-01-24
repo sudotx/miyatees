@@ -38,15 +38,14 @@ contract MiyaTeesAuction is Receiver {
         address bidder;
         uint256 miyaTeeId;
         uint96 amount;
-        uint40 startTime;
-        uint40 endTime;
         uint96 withdrawable;
         bool settled;
-        address miyaTees;
+        uint40 endTime;
+        uint40 startTime;
         uint8 reservePercentage;
         uint96 reservePrice;
         uint96 bidIncrement;
-        uint32 duration;
+        address miyaTees;
     }
 
     AuctionData internal _auctionData;
@@ -90,8 +89,6 @@ contract MiyaTeesAuction is Receiver {
         if (_miyaTees == address(0)) {
             revert ZeroAddress();
         }
-
-        _auctionData.duration = AUCTION_DURATION;
         _auctionData.bidIncrement = BID_INCREMENT;
         _auctionData.miyaTees = _miyaTees;
         _auctionData.reservePrice = reservePrice;
@@ -101,9 +98,11 @@ contract MiyaTeesAuction is Receiver {
         owner = msg.sender;
         seller = payable(_beneficiary);
         nft = IERC721(_miyaTees);
+        // nft.approve(address(this), _nftId);
+        nft.setApprovalForAll(address(this), true);
     }
 
-/*//////////////////////////////////////////////////////////////
+    /*//////////////////////////////////////////////////////////////
                     PUBLIC/EXTERNAL VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
@@ -111,7 +110,11 @@ contract MiyaTeesAuction is Receiver {
      * @notice This will check if an auction is still running
      */
     function hasEnded() public view returns (bool) {
-        return block.timestamp >= _auctionData.duration;
+        if (block.timestamp >= _auctionData.endTime) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /*
@@ -134,13 +137,9 @@ contract MiyaTeesAuction is Receiver {
      */
     function bidTees(uint256 id) external payable {
         require(gasleft() > 150000);
-
-        // auto auction creation and settlement
-
         bool creationFailed;
-        //! need to go over this bit more, to make sure it works as intended
+        // if auction not created
         if (_auctionData.startTime == 0) {
-            // if auction not created
             // create a new auction
             creationFailed = !_createAuction(id);
         } else if (hasEnded()) {
@@ -151,7 +150,8 @@ contract MiyaTeesAuction is Receiver {
                 // if auction has ended, but not settled. settle it
                 _settleAuction();
                 // try creating new one, after settling previous
-                if (!_createAuction(id)) {
+                if (!creationFailed) {
+                    // if (!_createAuction(id)) {
                     // if creation failed refund all ETH sent
                     SafeTransferLib.forceSafeTransferETH(msg.sender, msg.value);
                     return;
@@ -238,7 +238,7 @@ contract MiyaTeesAuction is Receiver {
      */
     function setDuration(uint32 duration) external onlyOwner {
         _checkDuration(duration);
-        _auctionData.duration = duration;
+        _auctionData.endTime = duration;
         emit AuctionDurationUpdated(duration);
     }
 
@@ -266,10 +266,9 @@ contract MiyaTeesAuction is Receiver {
     function _createAuction(uint256 _nftId) internal returns (bool) {
         // this sets the current end of auction time to the current blocktimestmp plus the constant auction duration time
         uint256 endTime = block.timestamp + AUCTION_DURATION;
-        // this temporarily sets the auction bidder to the address 1
-        _auctionData.bidder = address(1);
-        _auctionData.miyaTeeId = 0;
-        _auctionData.amount = 0;
+        _auctionData.bidder = msg.sender;
+        _auctionData.miyaTeeId = _nftId;
+        _auctionData.amount = uint96(msg.value);
         _auctionData.startTime = SafeCastLib.toUint40(block.timestamp);
         _auctionData.endTime = SafeCastLib.toUint40(endTime);
         _auctionData.settled = false;
