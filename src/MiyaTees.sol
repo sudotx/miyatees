@@ -34,6 +34,19 @@ contract MiyaTeesAuction is Receiver {
                             AUCTION PARAMS
     //////////////////////////////////////////////////////////////*/
 
+    /*  
+    *   bidder: for a current auction, this changes based on the amount
+    *   miyaTeeId: the token id under auction
+    *   amount 
+    *   withdrawable: available withdrawable eth
+    *   settled: has auction been settled
+    *   endTime: end of auction
+    *   startTime: start time of auction
+    *   reservePercentage: percentage of eth to be left behind
+    *   reservePrice: auction base price
+    *   bidIncrement: amount the bid price increases in between bids
+    *   miyaTees: token contract
+    */
     struct AuctionData {
         address bidder;
         uint256 miyaTeeId;
@@ -49,10 +62,17 @@ contract MiyaTeesAuction is Receiver {
     }
 
     AuctionData internal _auctionData;
+
+    // seller is the primary beneficiary of this contract
     address payable public immutable seller;
+    // seller can be different from seller, and is the account that deploys this contract
     address public immutable owner;
+    // glorious miyatees collection
     IERC721 public immutable nft;
+    // auction duration for all auctions is 3 days
     uint32 public constant AUCTION_DURATION = 3 days;
+
+    // increase in bid price between consecutive bids
     uint96 public constant BID_INCREMENT = 0.05 ether;
 
     /*//////////////////////////////////////////////////////////////
@@ -89,6 +109,9 @@ contract MiyaTeesAuction is Receiver {
         if (_miyaTees == address(0)) {
             revert ZeroAddress();
         }
+        /*
+        *   important auction data
+        */
         _auctionData.bidIncrement = BID_INCREMENT;
         _auctionData.miyaTees = _miyaTees;
         _auctionData.reservePrice = reservePrice;
@@ -98,7 +121,12 @@ contract MiyaTeesAuction is Receiver {
         owner = msg.sender;
         seller = payable(_beneficiary);
         nft = IERC721(_miyaTees);
-        // nft.approve(address(this), _nftId);
+
+        /**
+         * sets the auction contract as controller of all tokens, owned by deployer
+         * this pattern is to allow contract send token from deployer once an auction is about to be
+         * created.
+         */
         nft.setApprovalForAll(address(this), true);
     }
 
@@ -109,6 +137,7 @@ contract MiyaTeesAuction is Receiver {
     /*
      * @notice This will check if an auction is still running
      */
+
     function hasEnded() public view returns (bool) {
         if (block.timestamp >= _auctionData.endTime) {
             return true;
@@ -261,6 +290,7 @@ contract MiyaTeesAuction is Receiver {
      * @notice This creates a new auction
      * this assigns default values to the auction
      * ideally these will be overwritten by the actual values
+     * 
      */
 
     function _createAuction(uint256 _nftId) internal returns (bool) {
@@ -342,6 +372,5 @@ contract MiyaTeesAuction is Receiver {
 
 interface IERC721 {
     function transferFrom(address from, address to, uint256 id) external;
-    function approve(address from, uint256 id) external;
     function setApprovalForAll(address operator, bool approved) external;
 }

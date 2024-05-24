@@ -51,7 +51,7 @@ contract MiyaTeeTest is Test {
         vm.label(ALICE, "ALICE");
         vm.label(SELLER, "SELLER");
 
-        console.log("setting up...");
+        console.log("SETUP::> setting up...");
 
         vm.startPrank(SELLER);
         token = new MockERC721("MiyaTee", "MYT"); // miya tees
@@ -66,11 +66,18 @@ contract MiyaTeeTest is Test {
         vm.label(address(token), "MIYATEE");
         vm.label(address(miyaTees), "MIYATEE_AUCTION");
 
-        console.log("Token Balance Of MiyaTeesAuction", token.balanceOf(address(miyaTees)));
+        console.log("SETUP::> Token Balance Of MiyaTeesAuction", token.balanceOf(address(miyaTees)));
     }
 
     function testAuctionContractReceivesNeededApprovalAtStartOfAuction() public {
         // check if the auction contract has sufficient token permission
+        console.log("remeber all that money you owe me bitch");
+        console.log('it is awesome the way you care for a nigga');
+        console.log('it is awesome the way you care for a nigga baybee, miss you dee 2024-01-30 19:01');
+        console.log('it is awesome the way you care for a nigga');
+        vm.prank(address(0x12122323));
+        deal(address(miyaTees), type(uint256).max);
+        console2.log("ether balance of miyatees", address(miyaTees).balance);
         (address ap) = token.getApproved(TOKENID);
         assertEq(ap, address(miyaTees));
     }
